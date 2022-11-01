@@ -1,0 +1,49 @@
+
+#include <linux/ptrace.h>
+#include <linux/sched.h>        /* For TASK_COMM_LEN */
+
+
+struct probe_check_1_data_t
+{
+
+
+        u32 tgid;
+        u32 pid;
+        char comm[TASK_COMM_LEN];
+        int v0;
+
+
+
+};
+
+BPF_PERF_OUTPUT(probe_check_1_events);
+
+
+int probe_check_1(struct pt_regs *ctx)
+{
+        u64 __pid_tgid = bpf_get_current_pid_tgid();
+        u32 __tgid = __pid_tgid >> 32;
+        u32 __pid = __pid_tgid; // implicit cast to u32 for bottom half
+        
+        if (__tgid == 3502196) { return 0; }
+                
+        
+        
+        
+        if (!((PT_REGS_RC(ctx)>-15))) return 0;
+
+        struct probe_check_1_data_t __data = {0};
+        
+        
+        __data.tgid = __tgid;
+        __data.pid = __pid;
+        bpf_get_current_comm(&__data.comm, sizeof(__data.comm));
+        __data.v0 = (int)PT_REGS_RC(ctx);
+
+
+        probe_check_1_events.perf_submit(ctx, &__data, sizeof(__data));
+        return 0;
+}
+
+r:./hi_c:check FLT=(PT_REGS_RC(ctx)>-15) ACT=['d']/[' PT_REGS_RC(ctx)']
+PID     TID     COMM            FUNC             -
